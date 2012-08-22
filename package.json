@@ -1,0 +1,12 @@
+{
+  "name": "node-system3",
+  "version": "1.0.0",
+  "description": "system(3) wrapper for node.js",
+  "main": "index.js",
+  "scripts": {
+    "test": "make test"
+  },
+  "repository": "",
+  "author": "",
+  "license": "BSD"
+}
