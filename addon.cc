@@ -3,59 +3,56 @@
 #include <v8.h>
 #include <stdlib.h>
 #include <string>
+#include <stdlib.h>
+#include <unistd.h>
+#include <signal.h>
+#include <sys/wait.h>
+#include <stdio.h>
+#include <errno.h>
 
+v8::Handle<v8::Value> QxMethod(const v8::Arguments& args) {
+    v8::HandleScope scope;
 
-// http://www.dzone.com/snippets/simple-popen2-implementation
-#define READ 0
-#define WRITE 1
+    if (!args[0]->IsString()) {
+        v8::Local<v8::String> msg = v8::String::New("first argument for qx() should be string");
+        v8::ThrowException(v8::Exception::TypeError(msg));
+        return scope.Close(v8::Undefined());
+    }
+    v8::String::Utf8Value command(args[0]);
 
-pid_t
-popen2(const char *command, int *infp, int *outfp)
-{
-    int p_stdin[2], p_stdout[2];
-    pid_t pid;
-
-    if (pipe(p_stdin) != 0 || pipe(p_stdout) != 0)
-        return -1;
-
-    pid = fork();
-
-    if (pid < 0)
-        return pid;
-    else if (pid == 0)
-    {
-        close(p_stdin[WRITE]);
-        dup2(p_stdin[READ], READ);
-        close(p_stdout[READ]);
-        dup2(p_stdout[WRITE], WRITE);
-
-        execl("/bin/sh", "sh", "-c", command, NULL);
-        perror("execl");
-        exit(1);
+    char buf[BUFSIZ+1];
+    FILE *fp = popen(*command, "r");
+    if (!fp) {
+        return scope.Close(v8::Undefined()); // ignore and silently return undefined
     }
 
-    if (infp == NULL)
-        close(p_stdin[WRITE]);
-    else
-        *infp = p_stdin[WRITE];
+    v8::Handle<v8::String::Utf8Value> retval();
 
-    if (outfp == NULL)
-        close(p_stdout[READ]);
-    else
-        *outfp = p_stdout[READ];
+    std::string strbuf;
+    size_t n;
+    while (!!(n=fread(buf, sizeof(char), BUFSIZ, fp))) {
+        strbuf.append(buf, n);
+    }
+    if (pclose(fp) == -1) {
+        return scope.Close(v8::Undefined()); // ignore and silently return undefined
+    }
 
-    return pid;
+    return scope.Close(v8::String::New(strbuf.c_str()));
 }
 
 v8::Handle<v8::Value> SystemMethod(const v8::Arguments& args) {
     v8::HandleScope scope;
 
+    if (!args[0]->IsString()) {
+        v8::Local<v8::String> msg = v8::String::New("first argument for system() should be string");
+        v8::ThrowException(v8::Exception::TypeError(msg));
+        return scope.Close(v8::Undefined());
+    }
     v8::String::Utf8Value command(args[0]);
 
     char buf[BUFSIZ+1];
-    FILE *fp = popen("ls", "r");
+    FILE *fp = popen(*command, "r");
     if (!fp) {
-    // TODO: popen
         v8::Local<v8::String> msg = v8::String::New("'popen' failed.");
         v8::ThrowException(v8::Exception::TypeError(msg));
         return scope.Close(v8::Undefined());
@@ -66,18 +63,25 @@ v8::Handle<v8::Value> SystemMethod(const v8::Arguments& args) {
     std::string strbuf;
     size_t n;
     while (!!(n=fread(buf, sizeof(char), BUFSIZ, fp))) {
-        strbuf.append(buf, n);
+        fwrite(buf, sizeof(char), n, stdout);
     }
-    pclose(fp);
-    // TODO: handle error on pclose?
+    int status = pclose(fp);
+    int ret;
+    if (status != -1 && WIFEXITED(status)) {
+        ret = WEXITSTATUS(status);
+    } else {
+        ret = -1;
+    }
 
-    return scope.Close(v8::String::New(strbuf.c_str()));
+    return scope.Close(v8::Integer::New(ret));
 }
 
 extern "C"
 void init(v8::Handle<v8::Object> target) {
   target->Set(v8::String::NewSymbol("system"),
       v8::FunctionTemplate::New(SystemMethod)->GetFunction());
+  target->Set(v8::String::NewSymbol("qx"),
+      v8::FunctionTemplate::New(QxMethod)->GetFunction());
 }
 NODE_MODULE(hello, init)
 
