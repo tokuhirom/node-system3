@@ -1,5 +1,5 @@
 {
-  "name": "node-system3",
+  "name": "system3",
   "version": "1.0.0",
   "description": "system(3) emulation for node.js",
   "main": "index.js",

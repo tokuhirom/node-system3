@@ -4,11 +4,7 @@
 #include <stdlib.h>
 #include <string>
 #include <stdlib.h>
-#include <unistd.h>
-#include <signal.h>
-#include <sys/wait.h>
 #include <stdio.h>
-#include <errno.h>
 
 v8::Handle<v8::Value> QxMethod(const v8::Arguments& args) {
     v8::HandleScope scope;
