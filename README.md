@@ -19,6 +19,17 @@ INSTALLATION
 
     npm install system3
 
+METHODS
+-------
+
+### system3.system(command)
+
+Run the command with shell. This method doesn't pipes any input/output.
+
+### var out = system3.qx(command)
+
+Run the command with shell. This method captures stdout from the command. And return it.
+
 PORTABILITY
 -----------
 
