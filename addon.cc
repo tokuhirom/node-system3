@@ -22,8 +22,6 @@ v8::Handle<v8::Value> QxMethod(const v8::Arguments& args) {
         return scope.Close(v8::Undefined()); // ignore and silently return undefined
     }
 
-    v8::Handle<v8::String::Utf8Value> retval();
-
     std::string strbuf;
     size_t n;
     while (!!(n=fread(buf, sizeof(char), BUFSIZ, fp))) {
@@ -53,8 +51,6 @@ v8::Handle<v8::Value> SystemMethod(const v8::Arguments& args) {
         v8::ThrowException(v8::Exception::TypeError(msg));
         return scope.Close(v8::Undefined());
     }
-
-    v8::Handle<v8::String::Utf8Value> retval();
 
     std::string strbuf;
     size_t n;
